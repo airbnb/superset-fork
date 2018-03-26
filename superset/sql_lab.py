@@ -159,8 +159,18 @@ def execute_sql(
     if store_results and not results_backend:
         return handle_error("Results backend isn't configured.")
 
+    try:
+        template_processor = get_template_processor(
+            database=database, query=query)
+        tp = template_params or {}
+        rendered_query = template_processor.process_template(query.sql, **tp)
+    except Exception as e:
+        logging.exception(e)
+        msg = 'Template rendering failed: ' + utils.error_msg_from_exception(e)
+        return handle_error(msg)
+
     # Limit enforced only for retrieving the data, not for the CTA queries.
-    superset_query = SupersetQuery(query.sql)
+    superset_query = SupersetQuery(rendered_query)
     executed_sql = superset_query.stripped()
     if not superset_query.is_select() and not database.allow_dml:
         return handle_error(
@@ -170,7 +180,6 @@ def execute_sql(
             return handle_error(
                 'Only `SELECT` statements can be used with the CREATE TABLE '
                 'feature.')
-            return
         if not query.tmp_table_name:
             start_dttm = datetime.fromtimestamp(query.start_time)
             query.tmp_table_name = 'tmp_{}_table_{}'.format(
@@ -181,16 +190,6 @@ def execute_sql(
             db_engine_spec.limit_method == LimitMethod.WRAP_SQL):
         executed_sql = database.wrap_sql_limit(executed_sql, query.limit)
         query.limit_used = True
-    try:
-        template_processor = get_template_processor(
-            database=database, query=query)
-        tp = template_params or {}
-        executed_sql = template_processor.process_template(
-            executed_sql, **tp)
-    except Exception as e:
-        logging.exception(e)
-        msg = 'Template rendering failed: ' + utils.error_msg_from_exception(e)
-        return handle_error(msg)
 
     query.executed_sql = executed_sql
     query.status = QueryStatus.RUNNING
