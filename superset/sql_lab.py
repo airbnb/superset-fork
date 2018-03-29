@@ -19,7 +19,6 @@ from sqlalchemy.pool import NullPool
 
 from superset import app, dataframe, db, results_backend, utils
 from superset.db_engine_specs import LimitMethod
-from superset.jinja_context import get_template_processor
 from superset.models.sql_lab import Query
 from superset.sql_parse import SupersetQuery
 from superset.utils import get_celery_app, QueryStatus
@@ -109,13 +108,12 @@ def convert_results_to_df(cursor_description, data):
 
 @celery_app.task(bind=True, soft_time_limit=SQLLAB_TIMEOUT)
 def get_sql_results(
-        ctask, query_id, return_results=True, store_results=False,
-        user_name=None, template_params=None):
+        ctask, query_id, rendered_query, return_results=True, store_results=False,
+        user_name=None):
     """Executes the sql query returns the results."""
     try:
         return execute_sql(
-            ctask, query_id, return_results, store_results, user_name,
-            template_params)
+            ctask, query_id, rendered_query, return_results, store_results, user_name)
     except Exception as e:
         logging.exception(e)
         stats_logger.incr('error_sqllab_unhandled')
@@ -129,8 +127,8 @@ def get_sql_results(
 
 
 def execute_sql(
-    ctask, query_id, return_results=True, store_results=False, user_name=None,
-    template_params=None,
+    ctask, query_id, rendered_query, return_results=True, store_results=False,
+    user_name=None,
 ):
     """Executes the sql query returns the results."""
     session = get_session(not ctask.request.called_directly)
