@@ -159,16 +159,6 @@ def execute_sql(
     if store_results and not results_backend:
         return handle_error("Results backend isn't configured.")
 
-    try:
-        template_processor = get_template_processor(
-            database=database, query=query)
-        tp = template_params or {}
-        rendered_query = template_processor.process_template(query.sql, **tp)
-    except Exception as e:
-        logging.exception(e)
-        msg = 'Template rendering failed: ' + utils.error_msg_from_exception(e)
-        return handle_error(msg)
-
     # Limit enforced only for retrieving the data, not for the CTA queries.
     superset_query = SupersetQuery(rendered_query)
     executed_sql = superset_query.stripped()
