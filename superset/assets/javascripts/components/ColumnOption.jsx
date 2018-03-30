@@ -14,6 +14,7 @@ const defaultProps = {
 export default function ColumnOption({ column, showType }) {
   return (
     <span>
+      {showType && columnType && <ColumnTypeLabel type={columnType} />}
       <span className="m-r-5 option-label">
         {column.verbose_name || column.column_name}
       </span>
