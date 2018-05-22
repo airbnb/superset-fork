@@ -20,6 +20,7 @@ export const VIZ_TYPES = {
   horizon: 'horizon',
   iframe: 'iframe',
   line: 'line',
+  line_multi: 'line_multi',
   mapbox: 'mapbox',
   markup: 'markup',
   para: 'para',
