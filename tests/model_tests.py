@@ -74,16 +74,3 @@ class DatabaseModelTestCase(SupersetTestCase):
         user_name = make_url(model.get_sqla_engine(user_name=example_user).url).username
         self.assertNotEquals(example_user, user_name)
 
-    def test_single_statement(self):
-        main_db = self.get_main_database(db.session)
-
-        if main_db.backend == 'mysql':
-            df = main_db.get_df('SELECT 1', None)
-            self.assertEquals(df.iat[0, 0], 1)
-
-    def test_multi_statement(self):
-        main_db = self.get_main_database(db.session)
-
-        if main_db.backend == 'mysql':
-            df = main_db.get_df('USE superset; SELECT 1', None)
-            self.assertEquals(df.iat[0, 0], 1)
