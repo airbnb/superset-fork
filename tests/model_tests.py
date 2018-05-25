@@ -73,4 +73,3 @@ class DatabaseModelTestCase(SupersetTestCase):
         model.impersonate_user = False
         user_name = make_url(model.get_sqla_engine(user_name=example_user).url).username
         self.assertNotEquals(example_user, user_name)
-
