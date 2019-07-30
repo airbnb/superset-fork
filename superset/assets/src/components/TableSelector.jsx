@@ -19,7 +19,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Select from 'react-virtualized-select';
-import createFilterOptions from 'react-select-fast-filter-options';
 import { ControlLabel, Label } from 'react-bootstrap';
 import { t } from '@superset-ui/translation';
 import { SupersetClient } from '@superset-ui/connection';
@@ -66,7 +65,6 @@ export default class TableSelector extends React.PureComponent {
       dbId: props.dbId,
       schema: props.schema,
       tableName: props.tableName,
-      filterOptions: null,
     };
     this.changeSchema = this.changeSchema.bind(this);
     this.changeTable = this.changeTable.bind(this);
@@ -126,9 +124,7 @@ export default class TableSelector extends React.PureComponent {
       const endpoint = `/superset/tables/${dbId}/${schema}/${substr}/${forceRefresh}/`;
        return SupersetClient.get({ endpoint })
         .then(({ json }) => {
-          const filterOptions = createFilterOptions({ options: json.options });
           this.setState(() => ({
-            filterOptions,
             tableLoading: false,
             tableOptions: json.options.map(o => ({
               value: o.value,
@@ -142,7 +138,7 @@ export default class TableSelector extends React.PureComponent {
           this.props.handleError(t('Error while fetching table list'));
         });
     }
-     this.setState(() => ({ tableLoading: false, tableOptions: [], filterOptions: null }));
+     this.setState(() => ({ tableLoading: false, tableOptions: [] }));
     return Promise.resolve();
   }
   fetchSchemas(dbId, force) {
@@ -274,10 +270,10 @@ export default class TableSelector extends React.PureComponent {
         name="select-table"
         ref="selectTable"
         isLoading={this.state.tableLoading}
+        ignoreAccents={false}
         placeholder={t('Select table or type table name')}
         autosize={false}
         onChange={this.changeTable}
-        filterOptions={this.state.filterOptions}
         options={options}
         value={this.state.tableName}
       />) : (

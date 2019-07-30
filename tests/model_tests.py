@@ -315,3 +315,24 @@ class SqlaTableModelTestCase(SupersetTestCase):
         self.assertIn('--COMMENT', sql)
 
         app.config['SQL_QUERY_MUTATOR'] = None
+
+    def test_query_with_non_existent_metrics(self):
+        tbl = self.get_table_by_name('birth_names')
+
+        query_obj = dict(
+            groupby=[],
+            metrics=['invalid'],
+            filter=[],
+            is_timeseries=False,
+            columns=['name'],
+            granularity=None,
+            from_dttm=None,
+            to_dttm=None,
+            is_prequery=False,
+            extras={},
+        )
+
+        with self.assertRaises(Exception) as context:
+            tbl.get_query_str(query_obj)
+
+        self.assertTrue("Metric 'invalid' does not exist", context.exception)

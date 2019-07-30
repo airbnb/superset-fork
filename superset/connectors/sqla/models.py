@@ -591,7 +591,7 @@ class SqlaTable(Model, BaseDatasource):
             elif m in metrics_dict:
                 metrics_exprs.append(metrics_dict.get(m).get_sqla_col())
             else:
-                raise Exception(_("Metric '{}' is not valid".format(m)))
+                raise Exception(_("Metric '%(metric)s' does not exist", metric=m))
         if metrics_exprs:
             main_metric_expr = metrics_exprs[0]
         else:
@@ -816,7 +816,9 @@ class SqlaTable(Model, BaseDatasource):
             )
             ob = timeseries_limit_metric.get_sqla_col()
         else:
-            raise Exception(_("Metric '{}' is not valid".format(timeseries_limit_metric)))
+            raise Exception(
+                _("Metric '%(metric)s' does not exist", metric=timeseries_limit_metric),
+            )
 
         return ob
 
