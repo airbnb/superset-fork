@@ -34,11 +34,11 @@ class SupersetTestCase(unittest.TestCase):
         query = "SELECT * FROM tbname AS foo"
         self.assertEquals({"tbname"}, self.extract_tables(query))
 
-        query = 'SELECT * FROM tbname foo'
-        self.assertEquals({'tbname'}, self.extract_tables(query))
+        query = "SELECT * FROM tbname foo"
+        self.assertEquals({"tbname"}, self.extract_tables(query))
 
-        query = 'SELECT * FROM tbname AS foo'
-        self.assertEquals({'tbname'}, self.extract_tables(query))
+        query = "SELECT * FROM tbname AS foo"
+        self.assertEquals({"tbname"}, self.extract_tables(query))
 
         # underscores
         query = "SELECT * FROM tb_name"
@@ -93,16 +93,14 @@ class SupersetTestCase(unittest.TestCase):
         )
 
         self.assertEquals(
-            set(),
-            self.extract_tables('SELECT * FROM clustername.schemaname.'))
+            set(), self.extract_tables("SELECT * FROM clustername.schemaname.")
+        )
+
+        self.assertEquals(set(), self.extract_tables("SELECT * FROM clustername.."))
 
         self.assertEquals(
-            set(),
-            self.extract_tables('SELECT * FROM clustername..'))
-
-        self.assertEquals(
-            set(),
-            self.extract_tables('SELECT * FROM clustername..tbname'))
+            set(), self.extract_tables("SELECT * FROM clustername..tbname")
+        )
 
         # quotes
         query = "SELECT field1, field2 FROM tb_name"

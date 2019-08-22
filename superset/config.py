@@ -627,9 +627,9 @@ SQLALCHEMY_EXAMPLES_URI = None
 TALISMAN_ENABLED = False
 # If you want Talisman, how do you want it configured??
 TALISMAN_CONFIG = {
-    'content_security_policy': None,
-    'force_https': True,
-    'force_https_permanent': False,
+    "content_security_policy": None,
+    "force_https": True,
+    "force_https_permanent": False,
 }
 
 try:

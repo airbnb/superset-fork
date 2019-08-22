@@ -56,6 +56,7 @@ from superset import app, db, db_engine_specs, is_feature_enabled, security_mana
 from superset.connectors.connector_registry import ConnectorRegistry
 from superset.legacy import update_time_range
 from superset.models.helpers import AuditMixinNullable, ImportMixin
+from superset.models.tags import ChartUpdater, DashboardUpdater, FavStarUpdater
 from superset.models.user_attributes import UserAttribute
 from superset.utils import cache as cache_util, core as utils
 from superset.viz import viz_types
