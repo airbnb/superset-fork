@@ -179,6 +179,13 @@ export const defaultQueryEditor = {
   selectedText: null,
   sql: 'SELECT *\nFROM\nWHERE',
   title: 'Untitled Query',
+  schemaOptions: [
+    {
+      value: 'main',
+      label: 'main',
+      title: 'main',
+    },
+  ],
 };
 export const queries = [
   {
@@ -210,6 +217,20 @@ export const queries = [
     resultsKey: null,
     results: {
       columns: [
+        {
+          is_date: true,
+          is_dim: false,
+          name: 'ds',
+          type: 'STRING',
+        },
+        {
+          is_date: false,
+          is_dim: true,
+          name: 'gender',
+          type: 'STRING',
+        },
+      ],
+      selected_columns: [
         {
           is_date: true,
           is_dim: false,
@@ -264,7 +285,7 @@ export const queryWithBadColumns = {
   ...queries[0],
   results: {
     data: queries[0].results.data,
-    columns: [
+    selected_columns: [
       {
         is_date: true,
         is_dim: false,
@@ -330,15 +351,21 @@ export const tables = {
   options: [
     {
       value: 'birth_names',
+      schema: 'main',
       label: 'birth_names',
+      title: 'birth_names',
     },
     {
       value: 'energy_usage',
+      schema: 'main',
       label: 'energy_usage',
+      title: 'energy_usage',
     },
     {
       value: 'wb_health_population',
+      schema: 'main',
       label: 'wb_health_population',
+      title: 'wb_health_population',
     },
   ],
 };

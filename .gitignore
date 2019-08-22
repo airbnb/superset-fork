@@ -38,8 +38,10 @@ changelog.sh
 dist
 dump.rdb
 env
+venv*
 env_py3
 envpy3
+env36
 local_config.py
 superset_config.py
 superset.egg-info/

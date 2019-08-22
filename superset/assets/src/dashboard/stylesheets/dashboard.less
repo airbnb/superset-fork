@@ -120,7 +120,14 @@ body {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    & > :not(:last-child) {
+    & > :nth-child(3) {
+      border-radius: 2px 0px 0px 2px;
+      border-right: none;
+    }
+    & > :nth-child(4) {
+      border-radius: 0px 2px 2px 0px;
+    }
+    & > :not(:nth-child(3)):not(:last-child) {
       margin-right: 8px;
     }
   }
@@ -204,6 +211,11 @@ body {
 
   .favstar {
     font-size: 24px;
+    position: relative;
+    margin-left: 8px;
+  }
+
+  .publish {
     position: relative;
     margin-left: 8px;
   }

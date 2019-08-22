@@ -73,6 +73,8 @@ git push origin master
 You'll probably want to run these commands manually and understand what
 they do prior to doing so.
 
+## Release setup
+
 First you need to setup a few things. This is a one-off and doesn't
 need to be done at every release.
 
@@ -97,6 +99,8 @@ need to be done at every release.
     svn commit -m "Add PGP keys of new Superset committer"
 ```
 
+## Crafting tarball and signatures
+
 Now let's craft a source release
 ```bash
     # Assuming these commands are executed from the root of the repo
@@ -114,6 +118,8 @@ Now let's craft a source release
     # Alternatively you could clone the repo into another location as in
     # git clone git@github.com:apache/incubator-superset.git superset-releases
     git clean -fxd
+    # Create the target folder
+    mkdir -p ~/svn/superset_dev/${VERSION}/
     git archive \
         --format=tar.gz ${VERSION} \
         --prefix=${RELEASE}/ \
@@ -122,6 +128,8 @@ Now let's craft a source release
     cd ~/svn/superset_dev/
     scripts/sign.sh ${RELEASE}-source.tar.gz
 ```
+
+## Shipping to SVN
 
 Now let's ship this RC into svn's dev folder
 
@@ -135,6 +143,12 @@ Now let's ship this RC into svn's dev folder
 ```
 
 Now you're ready to start the VOTE thread.
+
+## Validating a release
+
+https://www.apache.org/info/verification.html
+
+## Publishing a successful release
 
 Upon a successful vote, you'll have to copy the folder into the non-"dev/"
 folder.

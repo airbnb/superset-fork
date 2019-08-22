@@ -21,6 +21,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
+import { t } from '@superset-ui/translation';
 
 import ExploreChartPanel from './ExploreChartPanel';
 import ControlPanelsContainer from './ControlPanelsContainer';
@@ -28,7 +29,7 @@ import SaveModal from './SaveModal';
 import QueryAndSaveBtns from './QueryAndSaveBtns';
 import { getExploreUrlAndPayload, getExploreLongUrl } from '../exploreUtils';
 import { areObjectsEqual } from '../../reduxUtils';
-import { getFormDataFromControls } from '../store';
+import { getFormDataFromControls } from '../controlUtils';
 import { chartPropShape } from '../../dashboard/util/propShapes';
 import * as exploreActions from '../actions/exploreActions';
 import * as saveModalActions from '../actions/saveModalActions';
@@ -94,12 +95,17 @@ class ExploreViewContainer extends React.Component {
     document.addEventListener('keydown', this.handleKeydown);
     this.addHistory({ isReplace: true });
     this.props.actions.logEvent(LOG_ACTIONS_MOUNT_EXPLORER);
+
+    // Trigger the chart if there are no errors
+    const { chart } = this.props;
+    if (!this.hasErrors()) {
+      this.props.actions.triggerQuery(true, this.props.chart.id);
+    }
   }
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.controls.viz_type.value !== this.props.controls.viz_type.value) {
       this.props.actions.resetControls();
-      this.props.actions.triggerQuery(true, this.props.chart.id);
     }
     if (
       nextProps.controls.datasource &&
@@ -125,8 +131,6 @@ class ExploreViewContainer extends React.Component {
 
   /* eslint no-unused-vars: 0 */
   componentDidUpdate(prevProps, prevState) {
-    this.triggerQueryIfNeeded();
-
     const changedControlKeys = this.findChangedControlKeys(prevProps.controls, this.props.controls);
     if (this.hasDisplayControlChanged(changedControlKeys, this.props.controls)) {
       this.addHistory({});
@@ -207,17 +211,6 @@ class ExploreViewContainer extends React.Component {
     );
   }
 
-  triggerQueryIfNeeded() {
-    if (this.props.chart.triggerQuery && !this.hasErrors()) {
-      this.props.actions.runQuery(
-        this.props.form_data,
-        false,
-        this.props.timeout,
-        this.props.chart.id,
-      );
-    }
-  }
-
   addHistory({ isReplace = false, title }) {
     const { payload } = getExploreUrlAndPayload({ formData: this.props.form_data });
     const longUrl = getExploreLongUrl(this.props.form_data, null, false);
@@ -249,7 +242,8 @@ class ExploreViewContainer extends React.Component {
     const formData = history.state;
     if (formData && Object.keys(formData).length) {
       this.props.actions.setExploreControls(formData);
-      this.props.actions.runQuery(formData, false, this.props.timeout, this.props.chart.id);
+      this.props.actions.postChartFormData(
+        formData, false, this.props.timeout, this.props.chart.id);
     }
   }
 
@@ -265,12 +259,13 @@ class ExploreViewContainer extends React.Component {
   renderErrorMessage() {
     // Returns an error message as a node if any errors are in the store
     const errors = [];
+    const ctrls = this.props.controls;
     for (const controlName in this.props.controls) {
       const control = this.props.controls[controlName];
       if (control.validationErrors && control.validationErrors.length > 0) {
         errors.push(
           <div key={controlName}>
-            <strong>{`[ ${control.label} ] `}</strong>
+            {t('Control labeled ')}<strong>{` "${control.label}" `}</strong>
             {control.validationErrors.join('. ')}
           </div>,
         );

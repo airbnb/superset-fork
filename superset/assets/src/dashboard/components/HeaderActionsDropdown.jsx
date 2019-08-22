@@ -37,6 +37,8 @@ const propTypes = {
   dashboardTitle: PropTypes.string.isRequired,
   hasUnsavedChanges: PropTypes.bool.isRequired,
   css: PropTypes.string.isRequired,
+  colorNamespace: PropTypes.string,
+  colorScheme: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   updateCss: PropTypes.func.isRequired,
   forceRefreshAllCharts: PropTypes.func.isRequired,
@@ -53,7 +55,10 @@ const propTypes = {
   onSave: PropTypes.func.isRequired,
 };
 
-const defaultProps = {};
+const defaultProps = {
+  colorNamespace: undefined,
+  colorScheme: undefined,
+};
 
 class HeaderActionsDropdown extends React.PureComponent {
   static discardChanges() {
@@ -98,8 +103,8 @@ class HeaderActionsDropdown extends React.PureComponent {
     this.props.updateCss(css);
   }
 
-  changeRefreshInterval(refreshInterval) {
-    this.props.setRefreshFrequency(refreshInterval);
+  changeRefreshInterval(refreshInterval, isPersistent) {
+    this.props.setRefreshFrequency(refreshInterval, isPersistent);
     this.props.startPeriodicRender(refreshInterval * 1000);
   }
 
@@ -111,6 +116,8 @@ class HeaderActionsDropdown extends React.PureComponent {
       refreshFrequency,
       editMode,
       css,
+      colorNamespace,
+      colorScheme,
       hasUnsavedChanges,
       layout,
       filters,
@@ -145,6 +152,8 @@ class HeaderActionsDropdown extends React.PureComponent {
             expandedSlices={expandedSlices}
             refreshFrequency={refreshFrequency}
             css={css}
+            colorNamespace={colorNamespace}
+            colorScheme={colorScheme}
             onSave={onSave}
             isMenuItem
             triggerNode={<span>{t('Save as')}</span>}
@@ -168,11 +177,20 @@ class HeaderActionsDropdown extends React.PureComponent {
         <MenuItem onClick={forceRefreshAllCharts} disabled={isLoading}>
           {t('Force refresh dashboard')}
         </MenuItem>
+
         <RefreshIntervalModal
           refreshFrequency={refreshFrequency}
           onChange={this.changeRefreshInterval}
-          triggerNode={<span>{t('Set auto-refresh interval')}</span>}
+          editMode={editMode}
+          triggerNode={
+            <span>
+              {editMode
+                ? t('Set auto-refresh interval')
+                : t('Auto-refresh dashboard')}
+            </span>
+          }
         />
+
         {editMode && (
           <MenuItem target="_blank" href={`/dashboard/edit/${dashboardId}`}>
             {t('Edit dashboard metadata')}

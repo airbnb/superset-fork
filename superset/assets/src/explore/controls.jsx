@@ -79,6 +79,7 @@ const D3_FORMAT_DOCS = 'D3 format syntax: https://github.com/d3/d3-format';
 
 // input choices & options
 const D3_FORMAT_OPTIONS = [
+  ['SMART_NUMBER', 'Adaptative formating'],
   ['.1s', '.1s (12345.432 => 10k)'],
   ['.3s', '.3s (12345.432 => 12.3k)'],
   [',.1%', ',.1% (12345.432 => 1,234,543.2%)'],
@@ -170,6 +171,7 @@ const metric = {
   ...metrics,
   multi: false,
   label: t('Metric'),
+  description: t('Metric'),
   default: props => mainMetric(props.savedMetrics),
 };
 
@@ -470,6 +472,13 @@ export const controls = {
     description: t('Display total row/column'),
   },
 
+  transpose_pivot: {
+    type: 'CheckboxControl',
+    label: t('Transpose Pivot'),
+    default: false,
+    description: t('Swap Groups and Columns'),
+  },
+
   show_markers: {
     type: 'CheckboxControl',
     label: t('Show Markers'),
@@ -551,6 +560,7 @@ export const controls = {
       'Egypt',
       'France',
       'Germany',
+      'India',
       'Italy',
       'Japan',
       'Morocco',
@@ -926,26 +936,17 @@ export const controls = {
     freeForm: true,
     label: t('Rule'),
     default: null,
-    choices: formatSelectOptions(['', '1T', '1H', '1D', '7D', '1M', '1AS']),
+    choices: formatSelectOptions(['1T', '1H', '1D', '7D', '1M', '1AS']),
     description: t('Pandas resample rule'),
   },
 
-  resample_how: {
+  resample_method: {
     type: 'SelectControl',
     freeForm: true,
-    label: t('How'),
+    label: t('Method'),
     default: null,
-    choices: formatSelectOptions(['', 'mean', 'sum', 'median']),
-    description: t('Pandas resample how'),
-  },
-
-  resample_fillmethod: {
-    type: 'SelectControl',
-    freeForm: true,
-    label: t('Fill Method'),
-    default: null,
-    choices: formatSelectOptions(['', 'ffill', 'bfill']),
-    description: t('Pandas resample fill method'),
+    choices: formatSelectOptions(['asfreq', 'bfill', 'ffill', 'median', 'mean', 'sum']),
+    description: t('Pandas resample method'),
   },
 
   time_range: {
@@ -991,7 +992,7 @@ export const controls = {
     freeForm: true,
     label: t('Number format'),
     renderTrigger: true,
-    default: '.3s',
+    default: 'SMART_NUMBER',
     choices: D3_FORMAT_OPTIONS,
     description: D3_FORMAT_DOCS,
   },
@@ -1234,7 +1235,7 @@ export const controls = {
     freeForm: true,
     label: t('X Axis Format'),
     renderTrigger: true,
-    default: '.3s',
+    default: 'SMART_NUMBER',
     choices: D3_FORMAT_OPTIONS,
     description: D3_FORMAT_DOCS,
   },
@@ -1254,7 +1255,7 @@ export const controls = {
     freeForm: true,
     label: t('Y Axis Format'),
     renderTrigger: true,
-    default: '.3s',
+    default: 'SMART_NUMBER',
     choices: D3_FORMAT_OPTIONS,
     description: D3_FORMAT_DOCS,
     mapStateToProps: (state) => {
@@ -1275,7 +1276,7 @@ export const controls = {
     type: 'SelectControl',
     freeForm: true,
     label: t('Right Axis Format'),
-    default: '.3s',
+    default: 'SMART_NUMBER',
     choices: D3_FORMAT_OPTIONS,
     description: D3_FORMAT_DOCS,
   },
@@ -1401,6 +1402,68 @@ export const controls = {
     renderTrigger: true,
     default: '150',
     description: t('Font size for the biggest value in the list'),
+  },
+
+  header_font_size: {
+    type: 'SelectControl',
+    label: t('Header Font Size'),
+    renderTrigger: true,
+    clearable: false,
+    default: 0.3,
+    // Values represent the percentage of space a header should take
+    options: [
+      {
+        label: t('Tiny'),
+        value: 0.125,
+      },
+      {
+        label: t('Small'),
+        value: 0.2,
+      },
+      {
+        label: t('Normal'),
+        value: 0.3,
+      },
+      {
+        label: t('Large'),
+        value: 0.4,
+      },
+      {
+        label: t('Huge'),
+        value: 0.5,
+      },
+    ],
+  },
+
+  subheader_font_size: {
+    type: 'SelectControl',
+    label: t('Subheader Font Size'),
+    renderTrigger: true,
+    clearable: false,
+    default: 0.125,
+    // Values represent the percentage of space a subheader should take
+    options: [
+      {
+        label: t('Tiny'),
+        value: 0.125,
+      },
+      {
+        label: t('Small'),
+        value: 0.2,
+      },
+      {
+        label: t('Normal'),
+        value: 0.3,
+      },
+      {
+        label: t('Large'),
+        value: 0.4,
+      },
+      {
+        label: t('Huge'),
+        value: 0.5,
+      },
+    ],
   },
 
   instant_filtering: {
@@ -1788,7 +1851,7 @@ export const controls = {
     'Either a numerical column or `Auto`, which scales the point based ' +
     'on the largest cluster'),
     mapStateToProps: state => ({
-      choices: columnChoices(state.datasource),
+      choices: formatSelectOptions(['Auto']).concat(columnChoices(state.datasource)),
     }),
   },
 
@@ -2028,6 +2091,17 @@ export const controls = {
     choices: () => categoricalSchemeRegistry.keys().map(s => ([s, s])),
     description: t('The color scheme for rendering chart'),
     schemes: () => categoricalSchemeRegistry.getMap(),
+  },
+
+  label_colors: {
+    type: 'ColorMapControl',
+    label: t('Color Map'),
+    default: {},
+    renderTrigger: true,
+    mapStateToProps: state => ({
+      colorNamespace: state.form_data.color_namespace,
+      colorScheme: state.form_data.color_scheme,
+    }),
   },
 
   significance_level: {

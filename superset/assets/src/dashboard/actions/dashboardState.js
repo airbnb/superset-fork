@@ -99,6 +99,32 @@ export function saveFaveStar(id, isStarred) {
   };
 }
 
+export const TOGGLE_PUBLISHED = 'TOGGLE_PUBLISHED';
+export function togglePublished(isPublished) {
+  return { type: TOGGLE_PUBLISHED, isPublished };
+}
+
+export function savePublished(id, isPublished) {
+  return function savePublishedThunk(dispatch) {
+    return SupersetClient.post({
+      endpoint: `/superset/dashboard/${id}/published/`,
+      postPayload: { published: isPublished },
+    })
+      .then(() => {
+        const nowPublished = isPublished ? 'published' : 'hidden';
+        dispatch(addSuccessToast(t(`This dashboard is now ${nowPublished}`)));
+        dispatch(togglePublished(isPublished));
+      })
+      .catch(() => {
+        dispatch(
+          addDangerToast(
+            t('You do not have permissions to edit this dashboard.'),
+          ),
+        );
+      });
+  };
+}
+
 export const TOGGLE_EXPAND_SLICE = 'TOGGLE_EXPAND_SLICE';
 export function toggleExpandSlice(sliceId) {
   return { type: TOGGLE_EXPAND_SLICE, sliceId };
@@ -125,8 +151,8 @@ export function onSave() {
 }
 
 export const SET_REFRESH_FREQUENCY = 'SET_REFRESH_FREQUENCY';
-export function setRefreshFrequency(refreshFrequency) {
-  return { type: SET_REFRESH_FREQUENCY, refreshFrequency };
+export function setRefreshFrequency(refreshFrequency, isPersistent = false) {
+  return { type: SET_REFRESH_FREQUENCY, refreshFrequency, isPersistent };
 }
 
 export function saveDashboardRequestSuccess() {
@@ -226,9 +252,9 @@ export function startPeriodicRender(interval) {
   };
 }
 
-export const TOGGLE_BUILDER_PANE = 'TOGGLE_BUILDER_PANE';
-export function toggleBuilderPane() {
-  return { type: TOGGLE_BUILDER_PANE };
+export const SHOW_BUILDER_PANE = 'SHOW_BUILDER_PANE';
+export function showBuilderPane(builderPaneType) {
+  return { type: SHOW_BUILDER_PANE, builderPaneType };
 }
 
 export function addSliceToDashboard(id) {
@@ -264,6 +290,18 @@ export function removeSliceFromDashboard(id) {
   return dispatch => {
     dispatch(removeSlice(id));
     dispatch(removeChart(id));
+  };
+}
+
+export const SET_COLOR_SCHEME = 'SET_COLOR_SCHEME';
+export function setColorScheme(colorScheme) {
+  return { type: SET_COLOR_SCHEME, colorScheme };
+}
+
+export function setColorSchemeAndUnsavedChanges(colorScheme) {
+  return dispatch => {
+    dispatch(setColorScheme(colorScheme));
+    dispatch(setUnsavedChanges(true));
   };
 }
 
