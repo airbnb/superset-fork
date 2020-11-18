@@ -33,7 +33,7 @@ describe('AdhocFilters', () => {
 
   let numScripts = 0;
 
-  xit('Should load AceEditor scripts when needed', () => {
+  it('Should load AceEditor scripts when needed', () => {
     cy.get('script').then(nodes => {
       numScripts = nodes.length;
     });
@@ -41,7 +41,6 @@ describe('AdhocFilters', () => {
     cy.get('[data-test=adhoc_filters]').within(() => {
       cy.get('.Select__control').scrollIntoView().click();
       cy.get('input[type=text]').focus().type('name{enter}');
-      cy.get("div[role='button']").first().click();
     });
 
     // antd tabs do lazy loading, so we need to click on tab with ace editor
@@ -75,7 +74,7 @@ describe('AdhocFilters', () => {
     });
   });
 
-  xit('Set custom adhoc filter', () => {
+  it('Set custom adhoc filter', () => {
     const filterType = 'name';
     const filterContent = "'Amy' OR name = 'Donald'";
 
