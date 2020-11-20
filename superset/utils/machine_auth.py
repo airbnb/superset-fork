@@ -67,7 +67,7 @@ class MachineAuthProvider:
 
         print("\n\n setting header \n\n")
         driver.get(
-            "https://webdriver.bewisse.com/add?X-Internalauth-Username=svc_di_analytics_products"
+            "https://webdriver.bewisse.com/add?X-Internalauth-Username=svc_di_analytics_products&X-Forwarded-Proto=http"
         )
         try:
             WebDriverWait(driver, 3).until(EC.title_is("Done"))
