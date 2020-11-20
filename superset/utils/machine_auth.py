@@ -77,8 +77,7 @@ class MachineAuthProvider:
         # Setting cookies requires doing a request first
         login_url = headless_url("/login/")
         print("\n\n login in now: {}....".format(login_url))
-
-        driver.get("http://superset.synapse:4353/login/")
+        driver.get(login_url)
         print("\n\n i am url:{}\n\n".format(driver.current_url))
         print("\n\n i am page source:{}".format(driver.page_source))
 
