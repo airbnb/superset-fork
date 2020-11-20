@@ -56,26 +56,33 @@ class MachineAuthProvider:
         if self._auth_webdriver_func_override:
             return self._auth_webdriver_func_override(driver, user)
 
-        print("\n\n i am user:{}".format(user))
-        with NamedTemporaryFile() as file:
-            file.write(
-                requests.get(
-                    "https://github.com/bewisse/modheader_selenium/blob/master/firefox-modheader/modheader.xpi?raw=true"
-                ).content
-            )
-
-            driver.install_addon(file.name)
-
-        print("\n\n setting header \n\n")
-        driver.get(
-            "https://webdriver.bewisse.com/add?X-Internalauth-Username=svc_di_analytics_products"
-        )
-        WebDriverWait(driver, 10).until(EC.title_is("Done"))
-        print("\n\n installed")
+        # print("\n\n i am user:{}".format(user))
+        # with NamedTemporaryFile() as file:
+        #     file.write(
+        #         requests.get(
+        #             "https://github.com/bewisse/modheader_selenium/blob/master/firefox-modheader/modheader.xpi?raw=true"
+        #         ).content
+        #     )
+        #
+        #     driver.install_addon(file.name)
+        #
+        # print("\n\n setting header \n\n")
+        # driver.get(
+        #     "https://webdriver.bewisse.com/add?X-Internalauth-Username=svc_di_analytics_products"
+        # )
+        # WebDriverWait(driver, 10).until(EC.title_is("Done"))
+        # print("\n\n installed")
 
         # Setting cookies requires doing a request first
-        driver.get(headless_url("/login/"))
-        driver.find_element_by_tag_name("button").click()
+        # driver.get(headless_url("/login/"))
+        # driver.find_element_by_tag_name("button").click()
+
+        print("\n\n i am user:{}".format(user))
+        profile = webdriver.FirefoxProfile()
+        opts = FirefoxOptions()
+        opts.add_argument("--headless")
+        profile.set_preference("X-Internalauth-Username", "svc_di_analytics_products")
+        driver = webdriver.Firefox(firefox_profile=profile, firefox_options=opts)
 
         print("\n\n i am url:{}\n\n".format(driver.current_url))
         print("\n\n i am page source:{}".format(driver.page_source))
