@@ -78,12 +78,13 @@ class MachineAuthProvider:
         # driver.find_element_by_tag_name("button").click()
 
         print("\n\n i am user:{}".format(user))
-        profile = webdriver.FirefoxProfile()
+        profile = driver.FirefoxProfile()
         opts = FirefoxOptions()
         opts.add_argument("--headless")
         profile.set_preference("X-Internalauth-Username", "svc_di_analytics_products")
-        driver = webdriver.Firefox(firefox_profile=profile, firefox_options=opts)
+        driver = driver.Firefox(firefox_profile=profile, firefox_options=opts)
 
+        driver.get(headless_url("/login/"))
         print("\n\n i am url:{}\n\n".format(driver.current_url))
         print("\n\n i am page source:{}".format(driver.page_source))
 
