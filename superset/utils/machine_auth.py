@@ -111,6 +111,8 @@ class MachineAuthProvider:
 
         print("\n\n i am url:{}\n\n".format(driver.current_url))
         print("\n\n i am page source:{}".format(driver.page_source))
+        for entry in driver.get_log("browser"):
+            print("\n\n browser log:{}".format(entry))
 
         return driver
 
