@@ -1263,17 +1263,17 @@ class NVD3TimeSeriesViz(NVD3Viz):
                     series_title = series_title + (title_suffix,)
 
             values = []
-            non_nan_cnt = 0
+            non_value_cnt = 0
             for ds in df.index:
                 if ds in ys:
                     d = {"x": ds, "y": ys[ds]}
-                    if not np.isnan(ys[ds]):
-                        non_nan_cnt += 1
+                    if not np.isnan(ys[ds]) and ys[ds] != 0:
+                        non_value_cnt += 1
                 else:
                     d = {}
                 values.append(d)
 
-            if non_nan_cnt == 0:
+            if non_value_cnt == 0:
                 continue
 
             d = {"key": series_title, "values": values}
@@ -1859,7 +1859,12 @@ class SankeyViz(BaseViz):
         source, target = self.groupby
         (value,) = self.metric_labels
         df.rename(
-            columns={source: "source", target: "target", value: "value",}, inplace=True,
+            columns={
+                source: "source",
+                target: "target",
+                value: "value",
+            },
+            inplace=True,
         )
         df["source"] = df["source"].astype(str)
         df["target"] = df["target"].astype(str)
