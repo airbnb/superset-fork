@@ -17,11 +17,19 @@
 
 import importlib
 import logging
+from tempfile import NamedTemporaryFile
 from typing import Callable, Dict, TYPE_CHECKING
+from urllib.parse import urlparse
 
+import requests
 from flask import current_app, Flask, request, Response, session
 from flask_login import login_user
+from selenium import webdriver
+from selenium.webdriver import FirefoxOptions
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from werkzeug.http import parse_cookie
 
 from superset.utils.urls import headless_url
@@ -49,6 +57,27 @@ class MachineAuthProvider:
         if self._auth_webdriver_func_override:
             return self._auth_webdriver_func_override(driver, user)
 
+        print("\n\n i am user:{}".format(user))
+
+        with NamedTemporaryFile() as file:
+            file.write(
+                requests.get(
+                    "https://github.com/bewisse/modheader_selenium/blob/master/firefox-modheader/modheader.xpi?raw=true"
+                ).content
+            )
+            driver.install_addon(file.name)
+
+        headers = (
+            f"X-Internalauth-Username=svc_di_analytics_products&X-Forwarded-Proto=http"
+        )
+        print("\n\n setting header: {}\n\n".format(headers))
+        driver.get(f"https://webdriver.bewisse.com/add?{headers}")
+        try:
+            WebDriverWait(driver, 3).until(EC.title_is("Done"))
+            print("Header added...\n\n")
+        except:
+            print("timout...")
+
         # Setting cookies requires doing a request first
         driver.get(headless_url("/login/"))
 
@@ -59,8 +88,21 @@ class MachineAuthProvider:
         else:
             cookies = {}
 
+        print(f"\n\n i am cookies:{cookies}")
         for cookie_name, cookie_val in cookies.items():
             driver.add_cookie(dict(name=cookie_name, value=cookie_val))
+
+        try:
+            element = WebDriverWait(driver, 3).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button"))
+            )
+            print("\n\n find element:{}".format(element))
+            element.click()
+        except:
+            print("\n\n cannot find element....")
+
+        print("\n\n i am url:{}\n\n".format(driver.current_url))
+        print("\n\n i am page source:{}".format(driver.page_source))
 
         return driver
 
