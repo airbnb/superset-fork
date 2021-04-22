@@ -247,6 +247,7 @@ class Dashboard(  # pylint: disable=too-many-instance-attributes
     )
     def full_data(self) -> Dict[str, Any]:
         """Bootstrap data for rendering the dashboard page."""
+        print("not cached")
         slices = self.slices
         try:
             datasources = self.datasets_for_slices()
