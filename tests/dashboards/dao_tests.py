@@ -19,6 +19,7 @@ import copy
 import json
 
 import pytest
+from freezegun import freeze_time
 
 import tests.test_app  # pylint: disable=unused-import
 from superset import db
@@ -79,3 +80,33 @@ class TestDashboardDAO(SupersetTestCase):
 
         # reset dash to original data
         DashboardDAO.set_dash_metadata(dash, original_data)
+
+    @pytest.mark.usefixtures("load_world_bank_dashboard_with_slices")
+    def test_get_dashboard_changed_on(self):
+        session = db.session()
+        dashboard = session.query(Dashboard).filter_by(slug="world_health").first()
+
+        assert dashboard.changed_on == DashboardDAO.get_dashboard_changed_on(dashboard)
+        assert dashboard.changed_on == DashboardDAO.get_dashboard_changed_on(
+            "world_health"
+        )
+
+        # Update this since the test will fail in 2100
+        with freeze_time("2100-01-01T00:00:00Z"):
+            old_changed_on = dashboard.changed_on
+
+            data = dashboard.data
+            positions = data["position_json"]
+            data.update({"positions": positions})
+            original_data = copy.deepcopy(data)
+
+            data.update({"foo": "bar"})
+            DashboardDAO.set_dash_metadata(dashboard, data)
+            session.merge(dashboard)
+            session.commit()
+
+        assert old_changed_on < DashboardDAO.get_dashboard_changed_on(dashboard)
+
+        DashboardDAO.set_dash_metadata(dashboard, original_data)
+        session.merge(dashboard)
+        session.commit()
