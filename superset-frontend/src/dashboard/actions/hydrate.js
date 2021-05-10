@@ -17,44 +17,34 @@
  * under the License.
  */
 /* eslint-disable camelcase */
-import { isString, keyBy } from 'lodash';
+import {isString, keyBy, isEmpty} from 'lodash';
 import shortid from 'shortid';
-import {
-  Behavior,
-  CategoricalColorNamespace,
-  getChartMetadataRegistry,
-} from '@superset-ui/core';
+import {Behavior, CategoricalColorNamespace, getChartMetadataRegistry,} from '@superset-ui/core';
 import querystring from 'query-string';
 
-import { chart } from 'src/chart/chartReducer';
-import { initSliceEntities } from 'src/dashboard/reducers/sliceEntities';
-import { getInitialState as getInitialNativeFilterState } from 'src/dashboard/reducers/nativeFilters';
-import { getParam } from 'src/modules/utils';
-import { applyDefaultFormData } from 'src/explore/store';
-import { buildActiveFilters } from 'src/dashboard/util/activeDashboardFilters';
+import {chart} from 'src/chart/chartReducer';
+import {initSliceEntities} from 'src/dashboard/reducers/sliceEntities';
+import {getInitialState as getInitialNativeFilterState} from 'src/dashboard/reducers/nativeFilters';
+import {getParam} from 'src/modules/utils';
+import {applyDefaultFormData} from 'src/explore/store';
+import {buildActiveFilters} from 'src/dashboard/util/activeDashboardFilters';
 import findPermission from 'src/dashboard/util/findPermission';
-import {
-  DASHBOARD_FILTER_SCOPE_GLOBAL,
-  dashboardFilter,
-} from 'src/dashboard/reducers/dashboardFilters';
+import {DASHBOARD_FILTER_SCOPE_GLOBAL, dashboardFilter,} from 'src/dashboard/reducers/dashboardFilters';
 import {
   DASHBOARD_HEADER_ID,
-  GRID_DEFAULT_CHART_WIDTH,
-  GRID_COLUMN_COUNT,
   DASHBOARD_ROOT_ID,
+  GRID_COLUMN_COUNT,
+  GRID_DEFAULT_CHART_WIDTH,
 } from 'src/dashboard/util/constants';
-import {
-  DASHBOARD_HEADER_TYPE,
-  CHART_TYPE,
-  ROW_TYPE,
-} from 'src/dashboard/util/componentTypes';
+import {CHART_TYPE, DASHBOARD_HEADER_TYPE, ROW_TYPE,} from 'src/dashboard/util/componentTypes';
 import findFirstParentContainerId from 'src/dashboard/util/findFirstParentContainer';
 import getEmptyLayout from 'src/dashboard/util/getEmptyLayout';
 import getFilterConfigsFromFormdata from 'src/dashboard/util/getFilterConfigsFromFormdata';
 import getLocationHash from 'src/dashboard/util/getLocationHash';
 import newComponentFactory from 'src/dashboard/util/newComponentFactory';
-import { TIME_RANGE } from 'src/visualizations/FilterBox/FilterBox';
-import { FeatureFlag, isFeatureEnabled } from '../../featureFlags';
+import {TIME_RANGE} from 'src/visualizations/FilterBox/FilterBox';
+import {FeatureFlag, isFeatureEnabled} from '../../featureFlags';
+import {FILTER_CONFIG_ATTRIBUTES, TIME_FILTER_LABELS, TIME_FILTER_MAP} from "../../explore/constants";
 
 const reservedQueryParams = new Set(['standalone', 'edit']);
 
@@ -76,6 +66,51 @@ const extractUrlParams = queryParams =>
     }
     return { ...acc, [key]: value };
   }, {});
+
+const getPreselectedValuesFromDashboard = (
+  preselectedFilters,
+) => {
+  return (filterKey, column) => {
+    if (preselectedFilters[filterKey] &&
+      preselectedFilters[filterKey].hasOwnProperty(column)) {
+      // overwrite default values by dashboard default_filters
+      return preselectedFilters[filterKey][column];
+    }
+  }
+}
+
+const getFilterBoxDefaultValues = (config) => {
+  let defaultValues = config[FILTER_CONFIG_ATTRIBUTES.DEFAULT_VALUE];
+
+  // treat empty string as null (no default value)
+  if (defaultValues === '') {
+    defaultValues = null;
+  }
+
+  // defaultValue could be ; separated values,
+  // could be null or ''
+  if (defaultValues && config[FILTER_CONFIG_ATTRIBUTES.MULTIPLE]) {
+    defaultValues = config.defaultValue.split(';');
+  }
+
+  return defaultValues
+}
+
+const buildValuesInArray = (value1, value2) => {
+  if (!isEmpty(value1)) {
+    return [value1];
+  } else if (!isEmpty(value2)) {
+    return [value2];
+  } else{
+    return [];
+  }
+}
+
+const FILTER_BOX_TRANSITION_MODE = {
+  test: 'TEST',
+  snooze: 'SNOOZE',
+  confirmed: 'CONFIRMED',
+}
 
 export const HYDRATE_DASHBOARD = 'HYDRATE_DASHBOARD';
 
@@ -143,6 +178,8 @@ export const hydrateDashboard = (dashboardData, chartData, datasourcesData) => (
   let newSlicesContainerWidth = 0;
 
   const filterScopes = metadata?.filter_scopes || {};
+  const filterConfig = metadata?.native_filter_configuration || [];
+  const isFilterBoxConverted = !!(metadata?.native_filter_configuration);
 
   const chartQueries = {};
   const dashboardFilters = {};
@@ -210,7 +247,9 @@ export const hydrateDashboard = (dashboardData, chartData, datasourcesData) => (
     }
 
     // build DashboardFilters for interactive filter features
-    if (slice.form_data.viz_type === 'filter_box') {
+    if (!isFilterBoxConverted &&
+      slice.form_data.viz_type === 'filter_box'
+    ) {
       const configs = getFilterConfigsFromFormdata(slice.form_data);
       let { columns } = configs;
       const { labels } = configs;
@@ -243,22 +282,195 @@ export const hydrateDashboard = (dashboardData, chartData, datasourcesData) => (
         };
       }, {});
 
-      const componentId = chartIdToLayoutId[key];
-      const directPathToFilter = (layout[componentId].parents || []).slice();
-      directPathToFilter.push(componentId);
-      dashboardFilters[key] = {
-        ...dashboardFilter,
-        chartId: key,
-        componentId,
-        datasourceId: slice.form_data.datasource,
-        filterName: slice.slice_name,
-        directPathToFilter,
-        columns,
-        labels,
-        scopes: scopesByChartId,
-        isInstantFilter: !!slice.form_data.instant_filtering,
-        isDateFilter: Object.keys(columns).includes(TIME_RANGE),
-      };
+      const {
+        date_filter = false,
+        datasource = '',
+        druid_time_origin,
+        filter_configs = [],
+        instant_filtering = false,
+        granularity,
+        granularity_sqla,
+        show_druid_time_granularity = false,
+        show_druid_time_origin = false,
+        show_sqla_time_column = false,
+        show_sqla_time_granularity = false,
+        time_grain_sqla,
+        time_range,
+      } = slice.form_data;
+
+      const getDashboardDefaultValues = getPreselectedValuesFromDashboard(preselectFilters);
+
+      if (date_filter) {
+        const {scope, immune} = scopesByChartId[TIME_FILTER_MAP['time_range']] || DASHBOARD_FILTER_SCOPE_GLOBAL;
+        const dashboardDefaultValues = getDashboardDefaultValues(key, TIME_FILTER_MAP['time_range']);
+        const timeRangeFilter = {
+          id: `NATIVE_FILTER-${shortid.generate()}`,
+          controlValues: {},
+          name: TIME_FILTER_LABELS['time_range'],
+          filterType: "filter_time",
+          targets: [{}],
+          defaultValue: dashboardDefaultValues || time_range,
+          cascadeParentIds: [],
+          scope: {
+            "rootPath": scope,
+            "excluded": immune,
+          },
+          isInstant: instant_filtering,
+        }
+        filterConfig.push(timeRangeFilter);
+
+        if (show_sqla_time_granularity) {
+          const {scope, immune} = scopesByChartId['time_grain_sqla'] || DASHBOARD_FILTER_SCOPE_GLOBAL;
+          const dashboardDefaultValues = getDashboardDefaultValues(key, TIME_FILTER_MAP['time_grain_sqla']);
+          const timeGrainFilter = {
+            id: `NATIVE_FILTER-${shortid.generate()}`,
+            controlValues: {},
+            name: TIME_FILTER_LABELS['time_grain_sqla'],
+            filterType: 'filter_timegrain',
+            targets: [
+              {
+                datasetId: parseInt(datasource.split('__')[0], 10),
+              }
+            ],
+            defaultValue: buildValuesInArray(dashboardDefaultValues, time_grain_sqla),
+            cascadeParentIds: [],
+            scope: {
+              "rootPath": scope,
+              "excluded": immune,
+            },
+            isInstant: instant_filtering,
+          }
+          filterConfig.push(timeGrainFilter);
+        }
+
+        if (show_sqla_time_column) {
+          const {scope, immune} = scopesByChartId['granularity_sqla'] || DASHBOARD_FILTER_SCOPE_GLOBAL;
+          const dashboardDefaultValues = getDashboardDefaultValues(key, TIME_FILTER_MAP['granularity_sqla']);
+          const timeColumnFilter = {
+            id: `NATIVE_FILTER-${shortid.generate()}`,
+            controlValues: {},
+            name: TIME_FILTER_LABELS['granularity_sqla'],
+            filterType: 'filter_timecolumn',
+            targets: [
+              {
+                datasetId: parseInt(datasource.split('__')[0], 10),
+              }
+            ],
+            defaultValue: buildValuesInArray(dashboardDefaultValues, granularity_sqla),
+            cascadeParentIds: [],
+            scope: {
+              "rootPath": scope,
+              "excluded": immune,
+            },
+            isInstant: instant_filtering,
+          }
+          filterConfig.push(timeColumnFilter);
+        }
+
+        if (show_druid_time_granularity) {
+          const {scope, immune} = scopesByChartId['granularity'] || DASHBOARD_FILTER_SCOPE_GLOBAL;
+          const dashboardDefaultValues = getDashboardDefaultValues(key, TIME_FILTER_MAP['granularity']);
+          const druidGranularityFilter = {
+            id: `NATIVE_FILTER-${shortid.generate()}`,
+            controlValues: {},
+            name: TIME_FILTER_LABELS['granularity'],
+            filterType: 'filter_timegrain',
+            targets: [
+              {
+                datasetId: parseInt(datasource.split('__')[0], 10),
+              }
+            ],
+            defaultValue: buildValuesInArray(dashboardDefaultValues, granularity),
+            cascadeParentIds: [],
+            scope: {
+              "rootPath": scope,
+              "excluded": immune,
+            },
+            isInstant: instant_filtering,
+          }
+          filterConfig.push(druidGranularityFilter);
+        }
+
+        // TODO: test
+        if (show_druid_time_origin) {
+          const {scope, immune} = scopesByChartId['druid_time_origin'] || DASHBOARD_FILTER_SCOPE_GLOBAL;
+          const dashboardDefaultValues = getDashboardDefaultValues(key, TIME_FILTER_MAP['druid_time_origin']);
+          const druidOriginFilter = {
+            id: `NATIVE_FILTER-${shortid.generate()}`,
+            controlValues: {},
+            name: TIME_FILTER_LABELS['druid_time_origin'],
+            filterType: 'filter_timegrain',
+            targets: [
+              {
+                datasetId: parseInt(datasource.split('__')[0], 10),
+              }
+            ],
+            defaultValue: buildValuesInArray(dashboardDefaultValues, druid_time_origin),
+            cascadeParentIds: [],
+            scope: {
+              "rootPath": scope,
+              "excluded": immune,
+            },
+            isInstant: instant_filtering,
+          }
+          filterConfig.push(druidOriginFilter);
+        }
+      }
+      filter_configs.forEach(config => {
+        const {scope, immune} = scopesByChartId[config.column] || DASHBOARD_FILTER_SCOPE_GLOBAL;
+        const defaultValues = getDashboardDefaultValues(key, config.column);
+        const entry = {
+          id: `NATIVE_FILTER-${config.key}`,
+          controlValues: {
+            // TODO: test
+            enableEmptyFilter: !config[FILTER_CONFIG_ATTRIBUTES.CLEARABLE],
+            defaultToFirstItem: false, // n/a
+            inverseSelection: false, // n/a
+            multiSelect: config[FILTER_CONFIG_ATTRIBUTES.MULTIPLE],
+            sortAscending: config[FILTER_CONFIG_ATTRIBUTES.SORT_ASCENDING],
+          },
+          name: config.label || config.column,
+          filterType: "filter_select",
+          targets: [
+            {
+              datasetId: parseInt(datasource.split('__')[0], 10),
+              column: {
+                name: config.column,
+              },
+            }
+          ],
+          // TODO: test
+          defaultValue: defaultValues || getFilterBoxDefaultValues(config),
+          cascadeParentIds:[],
+          scope:{
+            "rootPath": scope,
+            "excluded": immune,
+          },
+          isInstant: instant_filtering,
+        }
+        filterConfig.push(entry);
+      });
+
+      metadata = metadata || {};
+      metadata.native_filter_configuration = filterConfig;
+      // done
+
+      // const componentId = chartIdToLayoutId[key];
+      // const directPathToFilter = (layout[componentId].parents || []).slice();
+      // directPathToFilter.push(componentId);
+      // dashboardFilters[key] = {
+      //   ...dashboardFilter,
+      //   chartId: key,
+      //   componentId,
+      //   datasourceId: slice.form_data.datasource,
+      //   filterName: slice.slice_name,
+      //   directPathToFilter,
+      //   columns,
+      //   labels,
+      //   scopes: scopesByChartId,
+      //   isInstantFilter: !!slice.form_data.instant_filtering,
+      //   isDateFilter: Object.keys(columns).includes(TIME_RANGE),
+      // };
     }
 
     // sync layout names with current slice names in case a slice was edited
@@ -269,10 +481,10 @@ export const hydrateDashboard = (dashboardData, chartData, datasourcesData) => (
       layout[layoutId].meta.sliceName = slice.slice_name;
     }
   });
-  buildActiveFilters({
-    dashboardFilters,
-    components: layout,
-  });
+  // buildActiveFilters({
+  //   dashboardFilters,
+  //   components: layout,
+  // });
 
   // store the header as a layout component so we can undo/redo changes
   layout[DASHBOARD_HEADER_ID] = {
@@ -298,7 +510,7 @@ export const hydrateDashboard = (dashboardData, chartData, datasourcesData) => (
   }
 
   const nativeFilters = getInitialNativeFilterState({
-    filterConfig: metadata?.native_filter_configuration || [],
+    filterConfig,
     filterSetsConfig: metadata?.filter_sets_configuration || [],
   });
 

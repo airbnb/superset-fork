@@ -93,6 +93,8 @@ const ChartOverlay = styled.div`
   top: 0;
   left: 0;
   z-index: 5;
+  opacity: 0.25;
+  background-color: #000;
 `;
 
 export default class Chart extends React.Component {
@@ -279,6 +281,7 @@ export default class Chart extends React.Component {
 
     const { queriesResponse, chartUpdateEndTime, chartStatus } = chart;
     const isLoading = chartStatus === 'loading';
+    const isDeactivated = slice.viz_type === 'filter_box'
     // eslint-disable-next-line camelcase
     const isCached = queriesResponse?.map(({ is_cached }) => is_cached) || [];
     const cachedDttm =
@@ -350,7 +353,7 @@ export default class Chart extends React.Component {
             isOverflowable && 'dashboard-chart--overflowable',
           )}
         >
-          {isLoading && (
+          {(isLoading || isDeactivated) && (
             <ChartOverlay
               style={{
                 width,

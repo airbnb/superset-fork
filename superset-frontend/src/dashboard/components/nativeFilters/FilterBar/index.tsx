@@ -221,6 +221,7 @@ const FilterBar: React.FC<FiltersBarProps> = ({
 
   const isInitialized = useInitialization();
 
+  console.log('is filter change:', isFilterSetChanged)
   return (
     <BarWrapper {...getFilterBarTestId()} className={cx({ open: filtersOpen })}>
       <CollapsedBar

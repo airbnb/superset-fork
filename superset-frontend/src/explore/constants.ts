@@ -80,6 +80,7 @@ export const TIME_FILTER_LABELS = {
 };
 
 export const FILTER_CONFIG_ATTRIBUTES = {
+  SORT_ASCENDING: 'asc',
   DEFAULT_VALUE: 'defaultValue',
   MULTIPLE: 'multiple',
   SEARCH_ALL_OPTIONS: 'searchAllOptions',
