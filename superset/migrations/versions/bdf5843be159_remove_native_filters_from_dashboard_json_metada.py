@@ -23,21 +23,17 @@ Create Date: 2021-06-15 23:38:00.497753
 
 """
 
-
-import json
-
-from alembic import op
-from sqlalchemy import and_, Column, Integer, Text
-from sqlalchemy.ext.declarative import declarative_base
-
-from superset import db, is_feature_enabled
-
 # revision identifiers, used by Alembic.
 revision = "bdf5843be159"
 down_revision = "453530256cea"
 
-import sqlalchemy as sa
+import json
+
 from alembic import op
+from sqlalchemy import and_, Column, Integer, or_, Text
+from sqlalchemy.ext.declarative import declarative_base
+
+from superset import db, is_feature_enabled
 
 Base = declarative_base()
 
