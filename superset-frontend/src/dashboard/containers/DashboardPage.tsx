@@ -28,6 +28,15 @@ import {
 import { ResourceStatus } from 'src/common/hooks/apiResources/apiResources';
 import { hydrateDashboard } from 'src/dashboard/actions/hydrate';
 import injectCustomCss from 'src/dashboard/util/injectCustomCss';
+// import {
+//   getFromLocalStorage,
+//   setInLocalStorage,
+// } from 'src/utils/localStorageHelpers';
+import {
+  FILTER_BOX_TRANSITION_MODE,
+  // FILTER_BOX_TRANSITION_SNOOZE_DURATION,
+  // FILTER_BOX_TRANSITION_SNOOZED_AT
+} from "../../explore/constants";
 
 const DashboardContainer = React.lazy(
   () =>
@@ -66,6 +75,18 @@ const DashboardPage: FC = () => {
     chartsResource.status === ResourceStatus.COMPLETE &&
     datasetsResource.status === ResourceStatus.COMPLETE;
 
+  // should convert filter_box to filter component?
+  let filterboxMigrationState = FILTER_BOX_TRANSITION_MODE.REVIEWING;
+  // const filterConfig = metadata?.native_filter_configuration || [];
+  //
+  // if ( metadata && metadata.hasOwnProperty('native_filter_configuration') ) {
+  //   filterboxMigrationState = FILTER_BOX_TRANSITION_MODE.CONVERTED;
+  // } else if (now - getFromLocalStorage(FILTER_BOX_TRANSITION_SNOOZED_AT) < FILTER_BOX_TRANSITION_SNOOZE_DURATION) {
+  //   filterboxMigrationState = FILTER_BOX_TRANSITION_MODE.SNOOZED;
+  // } else {
+  //   show diagram
+  // }
+
   useEffect(() => {
     if (shouldBeHydrated) {
       dispatch(
@@ -73,12 +94,13 @@ const DashboardPage: FC = () => {
           dashboardResource.result,
           chartsResource.result,
           datasetsResource.result,
+          filterboxMigrationState,
         ),
       );
       setHydrated(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldBeHydrated]);
+  }, [shouldBeHydrated, filterboxMigrationState]);
 
   if (error) throw error; // caught in error boundary
   if (!isHydrated) return <Loading />;

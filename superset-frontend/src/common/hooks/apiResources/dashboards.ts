@@ -23,12 +23,25 @@ import { useApiV1Resource, useTransformedResource } from './apiResources';
 export const useDashboard = (idOrSlug: string | number) =>
   useTransformedResource(
     useApiV1Resource<Dashboard>(`/api/v1/dashboard/${idOrSlug}`),
-    dashboard => ({
-      ...dashboard,
-      metadata: dashboard.json_metadata && JSON.parse(dashboard.json_metadata),
-      position_data:
-        dashboard.position_json && JSON.parse(dashboard.position_json),
-    }),
+    dashboard => {
+      let metadata = {};
+      let position_data = {};
+      try {
+        if (dashboard.json_metadata) {
+          metadata =  JSON.parse(dashboard.json_metadata);
+        }
+        if (dashboard.position_json) {
+          position_data = JSON.parse(dashboard.position_json);
+        }
+      } catch (e) {
+          console.error('can not parse dashboard metadata.')
+      }
+      return {
+        ...dashboard,
+        metadata,
+        position_data,
+      }
+    },
   );
 
 // gets the chart definitions for a dashboard
