@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 # pylint: disable=comparison-with-callable, line-too-long, too-many-branches
-import dataclasses
 import logging
 import re
 from contextlib import closing
@@ -2036,21 +2035,10 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             table_name = data["datasourceName"]
             database_id = data["dbId"]
         except KeyError:
-            raise SupersetGenericErrorException(
-                "One or more required fields are missing in the request. Please try "
-                "again, and if the problem persists conctact your administrator.",
-                status=400,
-            )
+            return json_error_response("Missing required fields", status=400)
         database = db.session.query(Database).get(database_id)
         if not database:
-            raise SupersetErrorException(
-                SupersetError(
-                    message="The database was not found.",
-                    error_type=SupersetErrorType.DATABASE_NOT_FOUND_ERROR,
-                    level=ErrorLevel.ERROR,
-                ),
-                status=404,
-            )
+            return json_error_response("Database not found", status=400)
         table = (
             db.session.query(SqlaTable)
             .filter_by(database_id=database_id, table_name=table_name)
@@ -2113,14 +2101,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             stats_logger.incr(
                 f"deprecated.{self.__class__.__name__}.select_star.database_not_found"
             )
-            raise SupersetErrorException(
-                SupersetError(
-                    message="The database was not found.",
-                    error_type=SupersetErrorType.DATABASE_NOT_FOUND_ERROR,
-                    level=ErrorLevel.ERROR,
-                ),
-                status=404,
-            )
+            return json_error_response("Not found", 404)
         schema = utils.parse_js_uri_path_item(schema, eval_undefined=True)
         table_name = utils.parse_js_uri_path_item(table_name)  # type: ignore
         if not self.appbuilder.sm.can_access_table(database, Table(table_name, schema)):
@@ -2133,18 +2114,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
                 table_name,
                 schema,
             )
-            raise SupersetErrorException(
-                SupersetError(
-                    message=__(
-                        "You are not authorized to fetch samples from this table. If "
-                        "you think this is an error, please reach out to your "
-                        "administrator."
-                    ),
-                    error_type=SupersetErrorType.QUERY_SECURITY_ACCESS_ERROR,
-                    level=ErrorLevel.ERROR,
-                ),
-                status=403,
-            )
+            return json_error_response("Not found", 404)
         stats_logger.incr(f"deprecated.{self.__class__.__name__}.select_star.success")
         return json_success(
             database.select_star(
@@ -2455,21 +2425,15 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
                 )
         except Exception as ex:  # pylint: disable=broad-except
             logger.exception("Query %i: %s", query.id, str(ex))
-
-            message = _("Failed to start remote query on a worker.")
-            error = SupersetError(
-                message=message,
-                error_type=SupersetErrorType.ASYNC_WORKERS_ERROR,
-                level=ErrorLevel.ERROR,
+            msg = _(
+                "Failed to start remote query on a worker. "
+                "Tell your administrator to verify the availability of "
+                "the message queue."
             )
-            error_payload = dataclasses.asdict(error)
-
-            query.set_extra_json_key("errors", [error_payload])
             query.status = QueryStatus.FAILED
-            query.error_message = message
+            query.error_message = msg
             session.commit()
-
-            raise SupersetErrorException(error)
+            return json_error_response("{}".format(msg))
 
         # Update saved query with execution info from the query execution
         QueryDAO.update_saved_query_exec_info(query_id)
@@ -2674,23 +2638,9 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         try:
             query.raise_for_access()
         except SupersetSecurityException as ex:
-            message = _(
-                "You are not authorized to see this query. If you think this "
-                "is an error, please reach out to your administrator."
-            )
-            error = SupersetError(
-                message=message,
-                error_type=SupersetErrorType.QUERY_SECURITY_ACCESS_ERROR,
-                level=ErrorLevel.ERROR,
-            )
-            error_payload = dataclasses.asdict(error)
-
-            query.set_extra_json_key("errors", [error_payload])
             query.status = QueryStatus.FAILED
-            query.error_message = message
             session.commit()
-
-            raise SupersetErrorException(error, status=403) from ex
+            return json_errors_response([ex.error], status=403)
 
         try:
             template_processor = get_template_processor(
@@ -2707,7 +2657,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
                     'The query contains one or more malformed template parameters. Please check your query and confirm that all template parameters are surround by double braces, for example, "{{ ds }}". Then, try running your query again.'
                 ),
                 error=SupersetErrorType.INVALID_TEMPLATE_PARAMS_ERROR,
-            ) from ex
+            )
 
         if is_feature_enabled("ENABLE_TEMPLATE_PROCESSING"):
             # pylint: disable=protected-access

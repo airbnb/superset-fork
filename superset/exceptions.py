@@ -53,7 +53,7 @@ class SupersetErrorException(SupersetException):
 class SupersetGenericErrorException(SupersetErrorException):
     """Exceptions that are too generic to have their own type"""
 
-    def __init__(self, message: str, status: Optional[int] = None) -> None:
+    def __init__(self, message: str) -> None:
         super().__init__(
             SupersetError(
                 message=message,
@@ -61,8 +61,6 @@ class SupersetGenericErrorException(SupersetErrorException):
                 level=ErrorLevel.ERROR,
             )
         )
-        if status is not None:
-            self.status = status
 
 
 class SupersetErrorFromParamsException(SupersetErrorException):
